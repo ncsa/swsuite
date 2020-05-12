@@ -1,0 +1,90 @@
+#Copyright (c) 2020 University of Illinois.  All rights reserved.
+#
+#Developed by: Innovative Systems Lab
+#              National Center for Supercomputing Applications
+#              http://www.ncsa.uiuc.edu/AboutUs/Directorates/ISL.html
+#
+#Permission is hereby granted, free of charge, to any person obtaining a copy of
+#this software and associated documentation files (the "Software"), to deal with
+#the Software without restriction, including without limitation the rights
+#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+#of the Software, and to permit persons to whom the Software is furnished to
+#do so, subject to the following conditions:
+#* Redistributions of source code must retain the above copyright notice,
+#  this list of conditions and the following disclaimers.
+#* Redistributions in binary form must reproduce the above copyright notice,
+#  this list of conditions and the following disclaimers in the documentation
+#  and/or other materials provided with the distribution.
+#* Neither the names of Innovative Systems Lab, National Center for Supercomputing Applications,
+#  nor the names of its contributors may be used to endorse or promote products
+#  derived from this Software without specific prior written permission.
+#
+#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+#CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS WITH THE
+#SOFTWARE.
+
+#################################### Defaults and Limits ###########################################
+
+PARTITION_DEFAULT : "gpux1"
+
+NODES : 1
+NTASKS_PER_NODE : 16
+NTASKS_PER_NODE_CPU : 96
+SOCKETS_PER_NODE : 1
+CORES_PER_SOCKET : 4
+CORES_PER_SOCKET_CPU : 12
+THREADS_PER_CORE : 4
+GPUS : 1
+MEM_PER_CPU : 1200
+
+HOURS_UL : 24
+HOURS_DEBUG : 4
+HOURS_DEFAULT : 4
+HOURS : 24
+
+TIME : "24:00:00"
+
+MULTIPLIER : 1
+
+CPU_PER_GPU_LL : 16
+CPU_PER_GPU_UL : 40
+CPU_PER_GPU : 16
+CPU_PER_GPU_DEFAULT : 16
+
+SLURM_RUN : "srun"
+SLURM_BATCH : "#SBATCH"
+SLURM_ALLOC : "salloc"
+SHELL : "/bin/bash"
+
+SHEBANG : "#!/bin/bash"
+COMMENT : 2
+BATCH_COMMAND : 1
+NON_BATCH_COMMAND : 0
+
+INTERACTIVE_MODE : 0
+SCRIPT_MODE : 1
+ALLOCATION_MODE : 2
+
+################################# Some Environment Variables #######################################
+
+# set HAL_CONTAINER_REGISTRY=/opt/container/singularity
+HAL_CONTAINER_REGISTRY : $HAL_CONTAINER_REGISTRY
+CONTAINER_SEARCH_DEPTH_LIMIT : 0
+ALLOWED_CONTAINER_IMAGE_EXTENSIONS : [".sif"]
+
+
+###################################### Other Parameters ############################################
+
+ALLOWED_PARTITIONS : ["gpux1", "gpux2", "gpux3", "gpux4", "gpux8", "gpux12", "gpux16", "cpu_mini", "cpun1", "cpun2", "cpun3", "cpun4", "cpun8", "cpun12", "cpun16"]
+DEBUG_PARTITION : "debug"
+ALLOW_CPU_SSD : True
+
+################################### Error and Warning Codes ########################################
+
+VALUE_ERROR : -1
+TYPE_ERROR : -2
+WARNING : -3
