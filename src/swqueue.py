@@ -251,7 +251,8 @@ def display_full_nodes(node_info, nodes_to_display):
         if k in nodes_to_display:
             print(k)
             print(v)
-
+            subprocess.run(['ssh', k, 'nvidia-smi'])
+            
 def display_full_user(job_info, users_to_display):
     for k,v in job_info.items():
         if v['users'][0] in users_to_display and v['state'] == 'RUNNING':
