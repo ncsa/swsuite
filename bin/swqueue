@@ -28,5 +28,5 @@
 #SOFTWARE.
 
 #!/bin/sh
-/usr/bin/python3 /opt/apps/swsuite/src/swqueue.py -s
+/usr/bin/python3 /opt/apps/swsuite/src/swqueue.py -s %*
 
