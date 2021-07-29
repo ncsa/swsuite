@@ -29,7 +29,7 @@
 
 #!/bin/sh
 #
-# /opt/apps/swsuite/src/swqueue.sh
+# /opt/swsuite/src/swqueue.sh
 # version 1.0
 #
 scontrol show jobid | awk '/JobId|UserId|NodeList|JobState=|TRES|NumNodes|TimeLimit|SubmitTime|StartTime/ {print NR, $0}'

@@ -45,7 +45,7 @@ from collections import namedtuple
 # Switch to using dataclasses if you have support for python 3.7.x
 # from dataclasses import dataclass
 
-SWCONF = "/opt/apps/swsuite/conf/swconf.yaml"
+SWCONF = "/opt/swsuite/conf/swconf.yaml"
 
 BADWARNING = '\033[43;30m'
 OKGREEN = '\033[42m'

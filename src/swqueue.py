@@ -38,14 +38,13 @@ import re
 import random
 import argparse
 
-NUM_COMPUTE_NODES = 16
+NUM_COMPUTE_NODES = 7
 COMPUTE_NODES = ['hal{}{}'.format("0" if i < 10 else "", i) for i in range(1, 1+NUM_COMPUTE_NODES)]
 
 def display(hide_names, jobid_info, node_info, allowed_users, display_select_users):
     MAX_PROC = 160
     BIN_SIZE = 16
     MAX_NUM_GPUS = 4
-    NUM_COMPUTE_NODES = 16
     BARLENGTH = 7
     DATABARLENGTH = BARLENGTH - 2
     CGGAP= 4
@@ -279,6 +278,13 @@ def split_frames(m_data):
     for i in range(len(indices)):
         if i+1 < len(indices):
             indices[i] = (indices[i], indices[i+1])
+    #print(len(m_data))
+    #exit()
+    if len(m_data)==1:
+        print("|")
+        print("|    NO JOB RUNNING...")
+        print("|")
+        exit()
     indices[-1] = (indices[-1], len(m_data))
 
     frames = []
@@ -466,9 +472,9 @@ def main():
 
     flag = True
     while flag:
-        subprocess.run(["clear"])
+        #subprocess.run(["clear"])
         
-        m_data = subprocess.check_output(["/opt/apps/swsuite/src/swqueue.sh"], stderr=subprocess.STDOUT)
+        m_data = subprocess.check_output(['sh','/opt/swsuite/src/swqueue.sh'], stderr=subprocess.STDOUT)
         # m_data = ""
         # with open("scontrol_sample_data.txt", 'r') as f:
         #     m_data = f.read()

@@ -28,5 +28,5 @@
 #SOFTWARE.
 
 #!/bin/bash
-/usr/bin/python3 /opt/apps/swsuite/src/swrun.py $*
+/usr/bin/python3 /opt/swsuite/src/swrun.py $*
 #/usr/bin/python3 ../src/swrun.py $*
