@@ -35,12 +35,12 @@
 
 import subprocess
 import argparse
-from swtools import Builder
 import sys
+from swtools import Builder
 
 def main():
     if len(sys.argv)==1:
-        print("{}\n{}".format( "usage: swrun [-h] -p PARTITION [-c CPU_PER_GPU] [-t TIME] [-s SINGULARITY] [-r RESERVATION] [-v]",
+        print("{}\n{}".format( "usage: swrun [-h] -p PARTITION [-n NODE_TYPE] [-c CPU_PER_GPU] [-t TIME] [-s SINGULARITY] [-r RESERVATION] [-v]",
                                "swrun.py: error: the following arguments are required: -p/--partition") )
         print("------------------------------------------")
         print("Example: interactive 1x GPU job")
@@ -49,14 +49,13 @@ def main():
         print("------------------------------------------")
         return
     if len(sys.argv)==2 and sys.argv[1] == '-v':
-        print("HAL Slurm Wrapper Suite v0.5")
+        print("HAL Slurm Wrapper Suite v1.1")
         subprocess.run(['srun', '-V'])
         return
 
     parser = argparse.ArgumentParser(
-        description="HAL Slurm Wrapper Suite v0.5",
-        usage="swrun [-h] -p PARTITION [-c CPU_PER_GPU] [-t TIME] [-s SINGULARITY][-r RESERVATION] [-v]")
-#        usage="swrun [-h] -p PARTITION [-c CPU_PER_GPU] [-t TIME] [-s SINGULARITY][-r RESERVATION] [-l (ENABLE_LOCAL_SSD)] [-v]")
+        description="HAL Slurm Wrapper Suite v1.1",
+        usage="swrun [-h] -p PARTITION [-n NODE_TYPE] [-c CPU_PER_GPU] [-t TIME] [-s SINGULARITY][-r RESERVATION] [-v]")
 
     parser._action_groups.pop()
     required = parser.add_argument_group('Required Arguments')
@@ -65,32 +64,33 @@ def main():
 
     # Required Arguments
     required.add_argument("-p", "--partition",
-        help="CPU: cpun1, cpun2, cpun4, cpun8, cpun16. GPU: gpux1, gpux2, gpux3, gpux4, gpux8, gpux12, gpux16.",
+        help="CPU: cpux1, cpux4. GPU: gpux1, gpux2, gpux3, gpux4, gpux8.",
         nargs=1,
         default="84r",
         required=True)
 
     # Optional Arguments
+    optional.add_argument("-n", "--node_type",
+        help="Specify node type: x86 (default), ppc64le, arm.",
+        nargs=1)
     optional.add_argument("-c", "--cpu_per_gpu",
-        help="16 cpus (default), range from 16 cpus to 40 cpus.",
+        help="16 cpus (default), range from 16 cpus to 32 cpus.",
         type=int,
         nargs=1,
         default=16)
     optional.add_argument("-t", "--time",
+        type=str,
         help="4 hours (default), range from 1 hour to 24 hours (walltime).",
         nargs=1,
-        default="4")
+        default='4')
     optional.add_argument("-s", "--singularity",
-        help="Specify a singularity container(name-only) to use from the $HAL_CONTAINER_REGISTRY",
+        help="Specify a singularity container(name-only) to use from the $HOME/singularity directory.",
         nargs=1,
         default="84r")
     optional.add_argument("-r", "--reservation",
         help="Specify a reservation id",
         nargs=1,
         default="84r")
-#    optional.add_argument("-l", "--local_ssd",
-#        help="Include this flag to use ssd",
-#        action='store_true')
 
     # Other Arguments
     other.add_argument("-v", "--version",
@@ -108,8 +108,7 @@ def main():
         sys.tracebacklimit = 0
 
     # Define user suppplied parameters and create a Builder object
-#    user_arguments = ["partition", "cpu_per_gpu", "time", "singularity", "local_ssd", "reservation"]
-    user_arguments = ["partition", "cpu_per_gpu", "time", "singularity", "reservation"]
+    user_arguments = ["partition", "node_type", "cpu_per_gpu", "time", "singularity", "reservation"]
     bldr = Builder()
     command = bldr.build_command(args, user_arguments, 'interactive')
     command = command.split("\n")
@@ -121,7 +120,7 @@ def main():
         for c in command[1:]:
             print(c)
         print("{}Please submit the non-srun commands yourself!{}".format("\033[45m", "\033[0m"))
-    subprocess.run(command[0].split(" "))
+    # subprocess.run(command[0].split(" "))
 
 if __name__ == "__main__":
     main()

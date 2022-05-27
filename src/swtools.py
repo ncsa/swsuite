@@ -34,18 +34,17 @@
 #
 
 from functools import partial
+from datetime import datetime
 import os
-import yaml
 import argparse
 import math
-from datetime import datetime
+
+import swconfig as swc
 
 # Using collections for testing
 from collections import namedtuple
 # Switch to using dataclasses if you have support for python 3.7.x
 # from dataclasses import dataclass
-
-SWCONF = "/opt/swsuite/conf/swconf.yaml"
 
 BADWARNING = '\033[43;30m'
 OKGREEN = '\033[42m'
@@ -70,30 +69,35 @@ class Builder:
     # Takes in a partition and checks if it is in the list of allowed partitions
     # If not, return VALUE_ERROR to raise an ERROR and stop code exec
     def check_partitions(self, p):
-        if p not in ALLOWED_PARTITIONS:
-            return False, "{}Partition {} does not exist.{}".format(FAIL, p, ENDC), VALUE_ERROR, ""
+        if p not in swc.SWS_CONF['ALLOWED_PARTITIONS']:
+            return False, "{} Partition {} does not exist. {}".format(FAIL, p, ENDC), swc.SWS_CONF['VALUE_ERROR'], ""
         if "cpu" in p:
-            return False, "Note: {}CPU partition used. Ignoring all user-specified node config{}".format(BADWARNING, ENDC), WARNING, p
+            return False, "Note: {} CPU partition used. Ignoring all user-specified node config {}".format(BADWARNING, ENDC), swc.SWS_CONF['WARNING'], p
+        return True, "" , 0, ""
+
+    def check_node_type(self, p):
+        if p not in swc.SWS_CONF['ALLOWED_NODE_TYPE']:
+            return False, "{} Node Type {} does not exist. {}".format(FAIL, p, ENDC), swc.SWS_CONF['VALUE_ERROR'], ""
         return True, "" , 0, ""
 
     # Takes in a time as hours and checks it against a range
     # If not, cuts it off at limit and raises a WARNING
     def check_time(self, t):
-        tret = HOURS_DEFAULT
+        tret = swc.SWS_CONF['HOURS_DEFAULT']
         flag = True
         err_msg = ""
         err_code = 0
 
         if t < 1:
-            tret = HOURS_DEFAULT
+            tret = swc.SWS_CONF['HOURS_DEFAULT']
             flag = False
-            err_msg = "Warning: {}Time below 1 hour, using default of {} hours.{}".format(BADWARNING, HOURS_DEFAULT, ENDC)
-            err_code = WARNING
-        elif t > HOURS_UL:
-            tret = HOURS_UL
+            err_msg = "Warning: {} Time below 1 hour, using default of {} hours.{}".format(BADWARNING, swc.SWS_CONF['HOURS_DEFAULT'], ENDC)
+            err_code = swc.SWS_CONF['WARNING']
+        elif t > swc.SWS_CONF['HOURS_UL']:
+            tret = swc.SWS_CONF['HOURS_UL']
             flag = False
-            err_msg = "Warning: {}Time above {} hours, capping at {}.{}".format(BADWARNING,HOURS_UL, HOURS_UL, ENDC)
-            err_code = WARNING
+            err_msg = "Warning: {} Time above {} hours, capping at {}. {}".format(BADWARNING, swc.SWS_CONF['HOURS_UL'], swc.SWS_CONF['HOURS_UL'], ENDC)
+            err_code = swc.SWS_CONF['WARNING']
         else:
             tret = t
 
@@ -102,15 +106,15 @@ class Builder:
     # Takes in a cpu_per_gpu and checks it against a range
     # If not, RAISES an ERROR by return error code to parameter check
     def check_cpu_per_gpu(self, cpg):
-        cpgret = CPU_PER_GPU_DEFAULT
+        cpgret = swc.SWS_CONF['CPU_PER_GPU_DEFAULT']
         flag = True
         err_msg = ""
         err_code = 0
 
-        if cpg < CPU_PER_GPU_LL or cpg > CPU_PER_GPU_UL:
+        if cpg < swc.SWS_CONF['CPU_PER_GPU_LL'] or cpg > swc.SWS_CONF['CPU_PER_GPU_UL']:
             flag = False
-            err_msg = "{}Invalid value of {} CPU per GPU, please input an integer in the range between {} and {}.{}".format(FAIL, cpg, CPU_PER_GPU_LL, CPU_PER_GPU_UL, ENDC)
-            err_code = VALUE_ERROR
+            err_msg = "{}Invalid value of {} CPU per GPU, please input an integer in the range between {} and {}.{}".format(FAIL, cpg, swc.SWS_CONF['CPU_PER_GPU_LL'], swc.SWS_CONF['CPU_PER_GPU_UL'], ENDC)
+            err_code = swc.SWS_CONF['VALUE_ERROR']
 
         return flag, err_msg, err_code, 0
 
@@ -123,15 +127,15 @@ class Builder:
 
         ftree = {}
         depth = 0
-        for dirpath, dirnames, filenames, dirfd in os.fwalk(HAL_CONTAINER_REGISTRY):
+        for dirpath, dirnames, filenames, dirfd in os.fwalk(swc.SWS_CONF['HAL_CONTAINER_REGISTRY']):
             ftree[depth] = {'directory':dirpath, 'files':filenames}
             depth += 1
 
         final_img = ""
         found = False
         for k, v in ftree.items():
-            if k <= CONTAINER_SEARCH_DEPTH_LIMIT:
-                for ext in ALLOWED_CONTAINER_IMAGE_EXTENSIONS:
+            if k <= swc.SWS_CONF['CONTAINER_SEARCH_DEPTH_LIMIT']:
+                for ext in swc.SWS_CONF['ALLOWED_CONTAINER_IMAGE_EXTENSIONS']:
                     container = container_noext + ext
                     if container in v['files']:
                         final_img = "{}/{}".format(v['directory'], container)
@@ -143,12 +147,12 @@ class Builder:
 
         if final_img == "":
             flag = False
-            err_msg = "{}Container image not found!{}\n{} Started topdown search of depth {} from {} for {} {}".format(FAIL, ENDC, " "*len("ValueError:"), CONTAINER_SEARCH_DEPTH_LIMIT, HAL_CONTAINER_REGISTRY, container_noext, ALLOWED_CONTAINER_IMAGE_EXTENSIONS)
-            err_code = VALUE_ERROR
+            err_msg = "{}Container image not found!{}\n{} Started topdown search of depth {} from {} for {} {}".format(FAIL, ENDC, " "*len("ValueError:"), swc.SWS_CONF['CONTAINER_SEARCH_DEPTH_LIMIT'], swc.SWS_CONF['HAL_CONTAINER_REGISTRY'], container_noext, swc.SWS_CONF['ALLOWED_CONTAINER_IMAGE_EXTENSIONS'])
+            err_code = swc.SWS_CONF['VALUE_ERROR']
         else:
             flag = False
             err_msg = "{}Container image found!{} Using {}".format(OKGREEN + BLACK_TEXT , ENDC, final_img)
-            err_code = WARNING
+            err_code = swc.SWS_CONF['WARNING']
             toret = final_img
 
         return flag, err_msg, err_code, toret
@@ -168,11 +172,11 @@ class Builder:
                     if p in self._rules:
                         flag, err_msg, err_code, corrected_value = self._rules[p](x)
                         if flag == False:
-                            if err_code == VALUE_ERROR:
+                            if err_code == swc.SWS_CONF['VALUE_ERROR']:
                                 raise ValueError(err_msg)
-                            elif err_code == TYPE_ERROR:
+                            elif err_code == swc.SWS_CONF['TYPE_ERROR']:
                                 raise TypeError(err_msg)
-                            elif err_code == WARNING:
+                            elif err_code == swc.SWS_CONF['WARNING']:
                                 print(err_msg)
                                 dict_params[p] = corrected_value
 
@@ -189,17 +193,22 @@ class Builder:
             job_parameters[k] = v
         # Generated
         job_parameters["nodes"] = 1
-        job_parameters["ntasks-per-node"] = NTASKS_PER_NODE
-        job_parameters["sockets-per-node"] = SOCKETS_PER_NODE
-        job_parameters["cores-per-socket"] = CORES_PER_SOCKET
-        job_parameters["threads-per-core"] = THREADS_PER_CORE
-        job_parameters["gpus"] = GPUS
-        job_parameters["mem-per-cpu"] = MEM_PER_CPU
+        job_parameters["ntasks-per-node"] = swc.SWS_CONF['NTASKS_PER_NODE']
+        job_parameters["sockets-per-node"] = swc.SWS_CONF['SOCKETS_PER_NODE']
+        job_parameters["cores-per-socket"] = swc.SWS_CONF['CORES_PER_SOCKET']
+        job_parameters["threads-per-core"] = swc.SWS_CONF['THREADS_PER_CORE']
+        job_parameters["gpus"] = swc.SWS_CONF['GPUS']
+        if uparams["node_type"] == "ppc64le":
+            job_parameters["mem-per-cpu"] = swc.SWS_CONF['NODE_DEFINE'][0]['mem_cpu']
+        if uparams["node_type"] == "arm":
+            job_parameters["mem-per-cpu"] = swc.SWS_CONF['NODE_DEFINE'][1]['mem_cpu']
+        if uparams["node_type"] == "x86":
+            job_parameters["mem-per-cpu"] = swc.SWS_CONF['NODE_DEFINE'][2]['mem_cpu']
 
-        if mode == INTERACTIVE_MODE:
+        if mode == swc.SWS_CONF['INTERACTIVE_MODE']:
             job_parameters["wait"] = 0
 
-        if mode in [INTERACTIVE_MODE, SCRIPT_MODE]:
+        if mode in [swc.SWS_CONF['INTERACTIVE_MODE'], swc.SWS_CONF['SCRIPT_MODE']]:
             job_parameters["export"] = "ALL"
 
         return job_parameters
@@ -215,23 +224,28 @@ class Builder:
             del job_parameters[item]
 
         cpu_flag = 1
-        multiplier = MULTIPLIER
+        multiplier = swc.SWS_CONF['MULTIPLIER']
 
         partition = job_parameters["partition"]
         q_num = int(partition.split('x')[1]) if "gpu" in partition else 0
 
         if q_num >= 1 and q_num<=4:
             multiplier = q_num
-            job_parameters["partition"] = "gpu"
+            if job_parameters["node_type"] == "ppc64le":
+                job_parameters["partition"] = "gpu"
+            if job_parameters["node_type"] == "arm":
+                job_parameters["partition"] = "arm"
+            if job_parameters["node_type"] == "x86":
+                job_parameters["partition"] = "x86"                                
         elif q_num >=8 and q_num <= 16:
             multiplier = 4
             job_parameters["nodes"] = q_num // 4
-            job_parameters["partition"] = "gpu"
-        elif partition == "cpu_mini":
-            cpu_flag = 2
-            multiplier = 0
-            job_parameters["nodes"] = 1
-            job_parameters["partition"] = "cpu"
+            if job_parameters["node_type"] == "ppc64le":
+                job_parameters["partition"] = "gpu"
+            if job_parameters["node_type"] == "arm":
+                job_parameters["partition"] = "arm"
+            if job_parameters["node_type"] == "x86":
+                job_parameters["partition"] = "x86"      
         else:
             # cpu job
             cpu_flag = 0
@@ -240,8 +254,23 @@ class Builder:
             if c_num > 0:
                 job_parameters["partition"] = "cpu"
             job_parameters["nodes"] = c_num
+            if job_parameters["node_type"] == "arm":
+                c_num = int(partition.split('n')[1]) if "cpux" in partition else 0
+                job_parameters["partition"] = "arm"
+                job_parameters["nodes"] = 1
+            if job_parameters["node_type"] == "x86":
+                c_num = int(partition.split('n')[1]) if "cpux" in partition else 0
+                job_parameters["partition"] = "x86"
+                job_parameters["nodes"] = 1
 
-        job_parameters["gres"] = "gpu:v100:{}".format(job_parameters.pop("gpus")*multiplier*cpu_flag)
+        if job_parameters["node_type"] == "ppc64le":
+            gpu_type = swc.SWS_CONF['NODE_DEFINE'][0]['gpu_type']
+        if job_parameters["node_type"] == "arm":
+            gpu_type = swc.SWS_CONF['NODE_DEFINE'][1]['gpu_type']
+        if job_parameters["node_type"] == "x86":
+            gpu_type = swc.SWS_CONF['NODE_DEFINE'][2]['gpu_type']
+
+        job_parameters["gres"] = "gpu:{}:{}".format(gpu_type,job_parameters.pop("gpus")*multiplier*cpu_flag)
 
         job_parameters["sockets-per-node"] = 2 if multiplier > 2 else 1
 
@@ -250,47 +279,38 @@ class Builder:
         if cpu_flag == 1:
             job_parameters["cores-per-socket"] = math.ceil(cpg / job_parameters["threads-per-core"] * multiplier / job_parameters["sockets-per-node"])
             job_parameters["ntasks-per-node"] = job_parameters["cores-per-socket"]*job_parameters["sockets-per-node"]*job_parameters["threads-per-core"]
-        elif cpu_flag == 2:
-            job_parameters["cores-per-socket"] = 2
-            job_parameters["ntasks-per-node"] = 8
-        else:
-            job_parameters["cores-per-socket"] = CORES_PER_SOCKET_CPU
-            job_parameters["ntasks-per-node"] = NTASKS_PER_NODE_CPU
+        elif cpu_flag == 0:
+            job_parameters["cores-per-socket"] = 1
+            job_parameters["ntasks-per-node"] = 1
 
         hrs = job_parameters["time"]
 
-        if hrs <= HOURS_DEBUG and q_num>=1 and q_num<=4:
-            job_parameters["partition"] = DEBUG_PARTITION
+        # disabled for no debug queue
+        # if hrs <= swc.SWS_CONF['HOURS_DEBUG'] and q_num>=1 and q_num<=4:
+        #     job_parameters["partition"] = swc.SWS_CONF['DEBUG_PARTITION']
         job_parameters["time"] = "{}:00:00".format(hrs)
 
-        # handle local_ssd
-        if 'local_ssd' in job_parameters:
-            if job_parameters.pop("local_ssd") == True: 
-                if 'cpu' in job_parameters["partition"]:
-                    if ALLOW_CPU_SSD == True:
-                        job_parameters["partition"] = 'local_ssd'
-                elif 'gpu' in job_parameters["partition"]:
-                    job_parameters["partition"] = 'local_ssd'
+        job_parameters.pop("node_type")
 
         return job_parameters
 
     # takes a command dicitonary and makes it into an executable command
     def command_dict_to_command(self, command_dict, mode):
-        if mode == INTERACTIVE_MODE:
-            command = SLURM_RUN
-        elif mode == ALLOCATION_MODE:
-            command = SLURM_ALLOC
+        if mode == swc.SWS_CONF['INTERACTIVE_MODE']:
+            command = swc.SWS_CONF['SLURM_RUN']
+        elif mode == swc.SWS_CONF['ALLOCATION_MODE']:
+            command = swc.SWS_CONF['SLURM_ALLOC']
         else:
             # logic in build command makes sure you never come here
             # but if you do change it, let default be
-            command = SLURM_RUN
+            command = swc.SWS_CONF['SLURM_RUN']
 
         for k,v in command_dict.items():
             command += " --{}={}".format(k,v)
 
         # Add a shell to for interactive session
-        if mode == INTERACTIVE_MODE:
-            command += " {} {}".format("--pty", SHELL)
+        if mode == swc.SWS_CONF['INTERACTIVE_MODE']:
+            command += " {} {}".format("--pty", swc.SWS_CONF['SHELL'])
 
         return command
 
@@ -299,16 +319,16 @@ class Builder:
     def command_dict_to_script(self, command_dict, misc):
         script_buffer = ""
 
-        script_buffer = SHEBANG + "\n"
+        script_buffer = swc.SWS_CONF['SHEBANG'] + "\n"
         for k,v in command_dict.items():
             t = k
             if t == "job_name":
                 t = "job-name"
-            script_buffer += "{} --{}={}\n".format(SLURM_BATCH, t, v)
+            script_buffer += "{} --{}={}\n".format(swc.SWS_CONF['SLURM_BATCH'], t, v)
 
         script_buffer += "\n"
         for (idx, comm) in misc:
-            if idx == NON_BATCH_COMMAND or idx == COMMENT:
+            if idx == swc.SWS_CONF['NON_BATCH_COMMAND'] or idx == swc.SWS_CONF['COMMENT']:
                 script_buffer += "{}\n".format(comm)
 
         return script_buffer
@@ -343,14 +363,10 @@ class Builder:
         self._job_parameters = {}
         self._rules = {"partition": partial(self.check_partitions),
                         "time": partial(self.check_time),
+                        "node_type": partial(self.check_node_type),
                         "cpu_per_gpu": partial(self.check_cpu_per_gpu),
                         "singularity": partial(self.check_container)}
-        self._conf = {}
-        with open(SWCONF, 'r') as f:
-            try:
-                self._conf = yaml.safe_load(f)
-            except yaml.YAMLError as exc:
-                print(exc)
+        self._conf = swc.SWS_CONF
 
         self.resolve_env_vars(self._conf)
         globals().update(self._conf)
@@ -361,17 +377,20 @@ class Builder:
 
     # to build srun command
     def build_command(self, args, u_args, mode):
-        cur_mode = INTERACTIVE_MODE
+        cur_mode = swc.SWS_CONF['INTERACTIVE_MODE']
         if mode == 'interactive':
-            cur_mode = INTERACTIVE_MODE
+            cur_mode = swc.SWS_CONF['INTERACTIVE_MODE']
         elif mode == 'allocation':
-            cur_mode = ALLOCATION_MODE
+            cur_mode = swc.SWS_CONF['ALLOCATION_MODE']
         else:
             raise ValueError("Invalid mode specified for building command!")
 
         uparams = {}
         uparams["partition"] = args.partition[0]
-        uparams["cpu_per_gpu"] = CPU_PER_GPU_DEFAULT if type(args.cpu_per_gpu) == int else args.cpu_per_gpu[0]
+        uparams["cpu_per_gpu"] = swc.SWS_CONF['CPU_PER_GPU_DEFAULT'] if type(args.cpu_per_gpu) == int else args.cpu_per_gpu[0]
+
+        uparams["node_type"] = swc.SWS_CONF['NODE_TYPE_DEFAULT']
+        # print(swc.SWS_CONF['NODE_DEFINE'][0]['gpu_type'])
 
         wtf = args.time[0]
         try:
@@ -381,9 +400,10 @@ class Builder:
                 hrs = hrs + 1
         except ValueError:
             hrs = int(wtf)
-        uparams["time"] = int(hrs)
-# temporary disable local_ssd
-#        uparams["local_ssd"] = args.local_ssd
+        uparams["time"] = int(hrs)           
+
+        if "node_type" in args:
+            uparams["node_type"] = args.node_type[0]
 
         if "singularity" in args:
             if args.singularity == "84r":
@@ -417,24 +437,24 @@ class Builder:
         print(read_data)
         script_data = read_data.split("\n")
 
-        script_data = [x.strip() for x in script_data if x is not ""]
+        script_data = [x.strip() for x in script_data if x != ""]
 
         # following takes the lines of the script and tags them with an integer for identification
         scommands = []
         for x in script_data:
-            if x[:len(SLURM_BATCH)] == SLURM_BATCH:
-                scommands.append((BATCH_COMMAND,x))
-            elif (x[0] == "#" and x[1:1+len(SHELL)] == SHELL) or (x[0:2] == "#!" and x[2:2+len(SHELL)] == SHELL):
+            if x[:len(swc.SWS_CONF['SLURM_BATCH'])] == swc.SWS_CONF['SLURM_BATCH']:
+                scommands.append((swc.SWS_CONF['BATCH_COMMAND'],x))
+            elif (x[0] == "#" and x[1:1+len(swc.SWS_CONF['SHELL'])] == swc.SWS_CONF['SHELL']) or (x[0:2] == "#!" and x[2:2+len(swc.SWS_CONF['SHELL'])] == swc.SWS_CONF['SHELL']):
                 scommands.append((3,x))
             elif x[0] == '#':
-                scommands.append((COMMENT,x))
+                scommands.append((swc.SWS_CONF['COMMENT'],x))
             else:
-                scommands.append((NON_BATCH_COMMAND,x))
+                scommands.append((swc.SWS_CONF['NON_BATCH_COMMAND'],x))
 
         uparams = {}
         for sc in scommands:
             # if it is a BATCH command
-            if sc[0] == BATCH_COMMAND:
+            if sc[0] == swc.SWS_CONF['BATCH_COMMAND']:
                 p = sc[1].split(" ")[1].split("=")
                 key = p[0].split("--")[1]
                 if key == "time":
@@ -452,14 +472,12 @@ class Builder:
         if "partition" not in uparams:
             raise ValueError("Need Partition!")
         if "cpu_per_gpu" not in uparams:
-            uparams["cpu_per_gpu"] = CPU_PER_GPU_DEFAULT
+            uparams["cpu_per_gpu"] = swc.SWS_CONF['CPU_PER_GPU_DEFAULT']
         if "time" not in uparams:
-            uparams["time"] = HOURS_DEFAULT
-#        if "local_ssd" in uparams:
-#            uparams['local_ssd'] = True
+            uparams["time"] = swc.SWS_CONF['HOURS_DEFAULT']
 
         # params created
-        self._job_parameters = self.job_parameters_init(uparams, mode=SCRIPT_MODE)
+        self._job_parameters = self.job_parameters_init(uparams, mode=swc.SWS_CONF['SCRIPT_MODE'])
         self.parameter_checks(self._job_parameters, u_args)
         command_dict = self.build_command_internal(self._job_parameters)
 
@@ -469,10 +487,10 @@ class Builder:
             sing_exec_command = singularity_command.split("\n")[2]
             singularity_command = singularity_command.split("\n")[1]
             for i in range(len(scommands)):
-                if scommands[i][0] == NON_BATCH_COMMAND:
+                if scommands[i][0] == swc.SWS_CONF['NON_BATCH_COMMAND']:
                     scommands[i] = (scommands[i][0], sing_exec_command + " " + scommands[i][1])
 
-        scommands.insert(0, (NON_BATCH_COMMAND, singularity_command))
+        scommands.insert(0, (swc.SWS_CONF['NON_BATCH_COMMAND'], singularity_command))
 
         script_buffer = self.command_dict_to_script(command_dict, scommands)
 
@@ -507,8 +525,8 @@ def run_command_tests():
     print("Running Partition Tests...")
     logs += "\nRunning Partition Tests...\n"
 
-    for p in ALLOWED_PARTITIONS:
-        args = argStruct(partition=[p], cpu_per_gpu=[12], time=[8], singularity=[""])
+    for p in swc.SWS_CONF['ALLOWED_PARTITIONS']:
+        args = argStruct(partition=[p], cpu_per_gpu=[16], time=['4'], singularity=[""])
         command = bldr.build_command(args, user_arguments, 'interactive')
 
         num_tests += 1
@@ -523,17 +541,17 @@ def run_command_tests():
     logs += "\n\nRunning Time Tests...\n"
 
     test_time = 1
-    args = argStruct(partition=["gpux1"], cpu_per_gpu=[12], time=[test_time], singularity=[""])
+    args = argStruct(partition=["gpux1"], cpu_per_gpu=[16], time=[test_time], singularity=[""])
     command = bldr.build_command(args, user_arguments, 'interactive')
 
     num_tests += 1
     temp = check_command(command, [" --time={}:00:00".format(test_time),
-                                    " --partition={}".format(DEBUG_PARTITION)])
+                                    " --partition={}".format(swc.SWS_CONF['DEBUG_PARTITION'])])
     num_tests_passed += temp
     passfail_msg = TEST_PASSED if temp == 1 else TEST_FAILED
     logs += "\nTest num:{}\n{}\n{}\n{}\n".format(num_tests, args, command, passfail_msg)
 
-    args = argStruct(partition=["gpux16"], cpu_per_gpu=[12], time=[test_time], singularity=[""])
+    args = argStruct(partition=["gpux16"], cpu_per_gpu=[16], time=[test_time], singularity=[""])
     command = bldr.build_command(args, user_arguments, 'interactive')
 
     num_tests += 1
@@ -547,12 +565,12 @@ def run_command_tests():
     print("Running Other Tests...")
     logs += "\n\nRunning Other Tests...\n"
 
-    args = argStruct(partition=["cpu"], cpu_per_gpu=[12], time=[1], singularity=[""])
-    command = bldr.build_command(args, user_arguments, 'interactive')
+    # args = argStruct(partition=["cpu"], cpu_per_gpu=[16], time=[1], singularity=[""])
+    # command = bldr.build_command(args, user_arguments, 'interactive')
 
     num_tests += 1
-    temp = check_command(command, [" --ntasks-per-node={}".format(NTASKS_PER_NODE_CPU),
-                                    " --cores-per-socket={}".format(CORES_PER_SOCKET_CPU),
+    temp = check_command(command, [" --ntasks-per-node={}".format(swc.SWS_CONF['NTASKS_PER_NODE_CPU']),
+                                    " --cores-per-socket={}".format(swc.SWS_CONF['CORES_PER_SOCKET_CPU']),
                                     " --gres=gpu:v100:{}".format(0)])
     num_tests_passed += temp
     passfail_msg = TEST_PASSED if temp == 1 else TEST_FAILED
@@ -606,7 +624,7 @@ def run_e2e_tests(log_flag):
 # esting is ignored if this python script is imported else where
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="HAL Slurm Wrapper Suite v0.4 Tools Library",
+        description="HAL Slurm Wrapper Suite v1.1 Tools Library",
         usage="python3 swtools.py [-h] [-l]")
 
     parser.add_argument("-l", "--log",

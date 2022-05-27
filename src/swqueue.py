@@ -310,7 +310,8 @@ def get_nodes(info):
             else:
                 nodes.append(int(elem))
     else:
-        nodes = [int(info)]
+        #nodes = [int(info)]
+        nodes = [info]
 
     nodes = [COMPUTE_NODES[i-1] for i in nodes]
     return nodes
@@ -475,6 +476,7 @@ def main():
         #subprocess.run(["clear"])
         
         m_data = subprocess.check_output(['sh','/opt/swsuite/src/swqueue.sh'], stderr=subprocess.STDOUT)
+        #m_data = subprocess.check_output(['sh','/home/dmu/swsuite/src/swqueue.sh'], stderr=subprocess.STDOUT)
         # m_data = ""
         # with open("scontrol_sample_data.txt", 'r') as f:
         #     m_data = f.read()

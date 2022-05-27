@@ -28,5 +28,5 @@
 #SOFTWARE.
 
 #!/bin/bash
-/usr/bin/python3 /opt/swsuite/src/swbatch.py $*
-#/usr/bin/python3 ../src/swbatch.py $*
+#/usr/bin/python3 /opt/swsuite/src/swbatch.py $*
+/usr/bin/python3 /Users/dmu/swsuite/src/swbatch.py $*

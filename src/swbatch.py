@@ -74,12 +74,12 @@ def main():
         print("------------------------------------------")
         return
     if len(sys.argv)==2 and sys.argv[1] == '-v':
-        print("HAL Slurm Wrapper Suite v0.5")
+        print("HAL Slurm Wrapper Suite v1.1")
         subprocess.run(['sbatch', '-V'])
         return
 
     parser = argparse.ArgumentParser(
-        description="HAL Slurm Wrapper Suite v0.5",
+        description="HAL Slurm Wrapper Suite v1.1",
         usage="swbatch [-h] RUN_SCRIPT [-v]")
 
     parser._action_groups.pop()
